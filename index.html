@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Fit App</title>
+
+<meta name="theme-color" content="#0E1E2B" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Fit App" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  html, body { margin: 0; background: #F4F6F5; }
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap');
+  .app-outer { display: flex; justify-content: center; align-items: flex-start; padding: 24px 12px; font-family: 'Inter', sans-serif; width: 100%; box-sizing: border-box; }
+  .phone { width: 390px; max-width: 100%; height: 780px; background: #EEF2F0; border: 10px solid #0E1E2B; border-radius: 44px; box-shadow: 0 24px 60px rgba(14,30,43,0.25); overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 22px; background: #0E1E2B; border-radius: 0 0 16px 16px; z-index: 10; }
+  .status-bar { height: 34px; display:flex; align-items:center; justify-content:space-between; padding: 0 26px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0E1E2B; font-weight: 700; flex-shrink: 0; }
+  .content { flex: 1; overflow-y: auto; padding: 4px 18px 18px; }
+  .content::-webkit-scrollbar { width: 0; }
+  .screen { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
+  .auth-screen { justify-content: center; height: 100%; }
+  .screen-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 2px; }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6B7680; margin: 0 0 2px; font-weight: 600; }
+  .screen-title { font-family: 'Oswald', sans-serif; font-size: 24px; font-weight: 600; color: #0E1E2B; margin: 0; text-transform: uppercase; letter-spacing: 0.01em; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: #FF5A1F; color: #fff; display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-weight:600; }
+  .avatar.big { width: 56px; height: 56px; font-size: 20px; }
+  .card { background: #FFFFFF; border-radius: 20px; padding: 16px; border: 1px solid #DCE3E0; }
+  .ring-card { display:flex; align-items:center; gap: 14px; }
+  .ring-wrap { position: relative; width: 170px; height: 170px; flex-shrink: 0; }
+  .ring-track { fill: none; stroke: #E4EAE7; stroke-width: 12; }
+  .ring-progress { fill: none; stroke: #FF5A1F; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 0.4s ease; }
+  .ring-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring-number { font-family:'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; color:#0E1E2B; }
+  .ring-label { font-size: 10px; color:#6B7680; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+  .ring-side { display:flex; flex-direction:column; gap:8px; flex:1; min-width: 0; }
+  .ring-side-row { display:flex; align-items:center; gap:6px; font-size: 13px; font-weight: 600; color:#0E1E2B; }
+  .ring-side-row.muted { color:#6B7680; font-weight: 500; font-size: 12px; }
+  .macros-mini { display:flex; flex-direction:column; gap:6px; margin-top: 4px; }
+  .macro-row { display:flex; flex-direction:column; gap:3px; }
+  .macro-top { display:flex; justify-content:space-between; font-size: 10.5px; }
+  .macro-label { color:#0E1E2B; font-weight:600; }
+  .macro-vals { color:#6B7680; }
+  .macro-track { height: 5px; background:#E4EAE7; border-radius: 3px; overflow:hidden; }
+  .macro-fill { height: 100%; border-radius: 3px; }
+  .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display:grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .small-card { display:flex; flex-direction:column; gap: 8px; }
+  .small-card-top { display:flex; align-items:center; gap: 8px; }
+  .small-card-title { font-size: 12px; font-weight:700; color:#0E1E2B; text-transform:uppercase; letter-spacing:0.03em; }
+  .small-card-foot { font-size: 10px; }
+  .scoreboard { font-family:'JetBrains Mono', monospace; font-size: 26px; font-weight:700; color:#0E1E2B; }
+  .scoreboard-unit { font-size: 14px; margin-left: 2px; color:#6B7680; }
+  .track-thin { height: 6px; background:#E4EAE7; border-radius: 3px; overflow:hidden; }
+  .track-thin-fill { height:100%; border-radius:3px; }
+  .water-actions { display:flex; gap: 6px; margin-top: 2px; }
+  .stat-icon { width: 30px; height: 30px; border-radius: 9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .stat-chip { background:#fff; border:1px solid #DCE3E0; border-radius: 16px; padding: 10px; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+  .stat-value { font-family:'JetBrains Mono', monospace; font-weight:700; font-size: 16px; color:#0E1E2B; }
+  .stat-unit { font-size: 11px; margin-left: 2px; color:#6B7680; }
+  .stat-label { font-size: 9.5px; color:#6B7680; text-transform:uppercase; letter-spacing:0.03em; }
+  .btn-pill { border:none; background:#E4EAE7; color:#0E1E2B; font-weight:600; font-size:12.5px; padding: 8px 14px; border-radius: 999px; cursor:pointer; flex:1; text-align:center; }
+  .btn-pill.primary { background:#FF5A1F; color:#fff; }
+  .btn-pill.dark { background:#0E1E2B; color:#fff; }
+  .btn-pill.full { flex: none; width: 100%; }
+  .btn-pill:disabled { opacity: 0.6; cursor: default; }
+  .meal-card { display:flex; flex-direction:column; gap: 8px; }
+  .meal-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 2px; }
+  .meal-title { font-weight:700; font-size: 14px; color:#0E1E2B; }
+  .meal-kcal { font-family:'JetBrains Mono', monospace; font-size: 12px; color:#FF5A1F; font-weight:700; }
+  .meal-item { display:flex; justify-content:space-between; align-items:center; font-size: 13px; padding: 6px 0; border-top: 1px solid #EEF2F0; color:#0E1E2B; }
+  .meal-item-right { display:flex; align-items:center; gap: 8px; }
+  .empty-hint { font-size: 12px; color:#9AA5A2; margin: 2px 0; }
+  .add-food-btn { display:flex; align-items:center; justify-content:center; gap: 6px; background:none; border: 1.5px dashed #C7D0CD; color:#0E1E2B; font-weight:600; font-size: 12.5px; padding: 8px; border-radius: 12px; cursor:pointer; margin-top: 4px; }
+  .icon-btn { background:none; border:none; cursor:pointer; color:#9AA5A2; display:flex; }
+  .modal-overlay { position:absolute; inset:0; background: rgba(14,30,43,0.45); display:flex; align-items:flex-end; z-index: 50; }
+  .modal { background:#fff; width:100%; border-radius: 24px 24px 0 0; padding: 18px; display:flex; flex-direction:column; gap:10px; }
+  .modal-head { display:flex; justify-content:space-between; align-items:center; font-weight:700; color:#0E1E2B; margin-bottom: 4px; }
+  .input { border: 1.5px solid #DCE3E0; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; font-family:'Inter',sans-serif; outline:none; color: #0E1E2B; }
+  .input:focus { border-color:#FF5A1F; }
+  .exercise-row { display:flex; align-items:center; gap: 10px; padding: 9px 0; border-top: 1px solid #EEF2F0; cursor:pointer; }
+  .exercise-row:first-of-type { border-top:none; }
+  .exercise-done .exercise-name { text-decoration: line-through; color:#9AA5A2; }
+  .checkbox { width: 22px; height: 22px; border-radius: 7px; border: 2px solid #DCE3E0; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .checkbox-checked { background:#1E8C4A; border-color:#1E8C4A; }
+  .exercise-info { display:flex; flex-direction:column; flex:1; }
+  .exercise-name { font-size: 13.5px; font-weight:600; color:#0E1E2B; }
+  .exercise-detail { font-size: 11px; color:#6B7680; }
+  .chart-card { display:flex; flex-direction:column; gap: 8px; }
+  .chart-area { margin-top: 4px; }
+  .chart-labels { display:flex; justify-content:space-between; font-size: 9px; color:#9AA5A2; margin-top: 2px; }
+  .weight-input-row { display:flex; gap: 8px; margin-top: 6px; }
+  .weight-input-row .input { flex:1; }
+  .profile-card { display:flex; align-items:center; gap: 12px; }
+  .profile-name { font-family:'Oswald', sans-serif; font-size: 17px; font-weight:600; color:#0E1E2B; }
+  .goal-row { display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-top: 1px solid #EEF2F0; cursor:pointer; }
+  .goal-row:first-of-type { border-top:none; }
+  .goal-label { font-size: 13.5px; font-weight:600; color:#0E1E2B; }
+  .small { font-size: 11px; }
+  .radio { width: 18px; height: 18px; border-radius:50%; border: 2px solid #DCE3E0; }
+  .radio-checked { border-color:#FF5A1F; background: radial-gradient(circle, #FF5A1F 0 40%, transparent 42%); }
+  .premium-card { background:#0E1E2B; border:none; }
+  .premium-title { font-family:'Oswald',sans-serif; color:#fff; font-size: 15px; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; }
+  .premium-desc { color:#9FB3AD; font-size: 12px; margin: 6px 0 12px; line-height:1.4; }
+  .muted { color:#6B7680; }
+  .streak-bar { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #DCE3E0; border-radius: 14px; padding: 10px 14px; }
+  .streak-left { display:flex; align-items:center; gap: 7px; font-size: 12.5px; color:#0E1E2B; }
+  .streak-left strong { font-weight: 700; }
+  .streak-dots { display:flex; gap: 3px; }
+  .streak-dot { width: 7px; height: 7px; border-radius: 50%; background:#E4EAE7; display:inline-block; }
+  .streak-dot-on { background:#FF5A1F; }
+  .challenge-card { display:flex; flex-direction:column; gap: 6px; }
+  .challenge-top { display:flex; justify-content:space-between; align-items:baseline; }
+  .challenge-title { font-weight:700; font-size: 13px; color:#0E1E2B; }
+  .challenge-count { font-family:'JetBrains Mono', monospace; font-size: 12px; color:#1E8C4A; font-weight:700; }
+  .challenge-desc { font-size: 12px; color:#6B7680; margin: 0; }
+  .quick-actions { display:flex; gap: 8px; }
+  .quick-btn { flex:1; display:flex; align-items:center; justify-content:center; gap: 6px; background:#0E1E2B; color:#fff; border:none; border-radius: 14px; padding: 11px 6px; font-size: 12px; font-weight:600; cursor:pointer; }
+  .hint-banner { display:flex; justify-content:space-between; align-items:flex-start; gap: 8px; background:#FFF3EC; border: 1px solid #FFD6BE; border-radius: 12px; padding: 10px 12px; font-size: 12px; color:#9A4A1F; line-height:1.4; }
+  .error-banner { background:#FDECEC; border-color:#F5B5B5; color:#8A1F1F; }
+  .fav-card { display:flex; flex-direction:column; gap: 8px; }
+  .select-refeicao { border: 1.5px solid #DCE3E0; border-radius: 10px; padding: 7px 10px; font-size: 12px; font-family:'Inter',sans-serif; color:#0E1E2B; background:#fff; }
+  .fav-chips { display:flex; flex-wrap: wrap; gap: 6px; }
+  .fav-chip { background:#EEF2F0; border: 1px solid #DCE3E0; border-radius: 999px; padding: 7px 11px; font-size: 11.5px; font-weight:600; color:#0E1E2B; cursor:pointer; display:flex; align-items:center; gap: 5px; }
+  .fav-chip-kcal { color:#FF5A1F; font-family:'JetBrains Mono', monospace; font-size: 10px; }
+  .adaptive-card { padding: 14px 16px; }
+  .adaptive-row { display:flex; justify-content:space-between; align-items:center; gap: 12px; }
+  .switch { width: 42px; height: 24px; border-radius: 999px; background:#DCE3E0; border:none; position:relative; cursor:pointer; flex-shrink:0; padding: 0; }
+  .switch-on { background:#1E8C4A; }
+  .switch-knob { position:absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius:50%; background:#fff; transition: left 0.2s ease; }
+  .switch-on .switch-knob { left: 21px; }
+  .tab-bar { display:flex; justify-content:space-around; align-items:center; padding: 10px 6px 14px; background:#fff; border-top:1px solid #DCE3E0; flex-shrink:0; }
+  .tab-item { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; padding: 4px 8px; color:#9AA5A2; }
+  .tab-item.active { color:#FF5A1F; }
+  .tab-item span { font-size: 9.5px; font-weight:600; }
+  .sync-icon-btn { background:none; border:none; cursor:pointer; color:#0E1E2B; display:flex; padding: 2px; font-size: 15px; }
+  .spin { display:inline-block; animation: girar 0.9s linear infinite; }
+  @keyframes girar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .sync-code-box { display:flex; align-items:center; justify-content:space-between; background:#EEF2F0; border:1px solid #DCE3E0; border-radius: 12px; padding: 10px 14px; }
+  .sync-code { font-family:'JetBrains Mono', monospace; font-size: 20px; font-weight:700; letter-spacing: 0.1em; color:#0E1E2B; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/plain" id="fit-app-source">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+// ---------------------------------------------------------------------------
+// ARMAZENAMENTO LOCAL — sem API tradicional. Tudo fica no localStorage do
+// navegador. A sincronização entre aparelhos (opcional) fala com /api/sync,
+// uma função serverless da própria Vercel.
+// ---------------------------------------------------------------------------
+const PREFIX = "fitapp_";
+function load(key, fallback) { try { const raw = localStorage.getItem(PREFIX + key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
+function save(key, value) { localStorage.setItem(PREFIX + key, JSON.stringify(value)); }
+
+function calcularMetas({ pesoKg, alturaCm, idade, sexo, objetivo }) {
+  const tmb = sexo === "feminino" ? 10*pesoKg+6.25*alturaCm-5*idade-161 : 10*pesoKg+6.25*alturaCm-5*idade+5;
+  const manutencao = Math.round(tmb * 1.4);
+  const ajustes = { emagrecer: -450, manter: 0, ganhar: 350 };
+  const meta_calorica = manutencao + (ajustes[objetivo] ?? 0);
+  const proteinaPorKg = objetivo === "ganhar" ? 2.0 : objetivo === "emagrecer" ? 2.2 : 1.6;
+  const meta_proteina = Math.round(pesoKg * proteinaPorKg);
+  const kcalProteina = meta_proteina * 4;
+  const kcalGordura = meta_calorica * 0.27;
+  const meta_gordura = Math.round(kcalGordura / 9);
+  const meta_carbo = Math.round((meta_calorica - kcalProteina - kcalGordura) / 4);
+  return { meta_calorica, meta_proteina, meta_carbo, meta_gordura };
+}
+
+const db = {
+  getPerfil: () => load("perfil", null),
+  savePerfil: (p) => { save("perfil", p); return p; },
+  getGoals: () => load("goals", null),
+  saveGoals: (g) => { save("goals", g); return g; },
+  getFoodLogs: (data) => load("foodlogs", []).filter((i) => i.data === data),
+  addFoodLog: (payload) => { const all = load("foodlogs", []); const item = { ...payload, id: Date.now() + Math.random() }; all.push(item); save("foodlogs", all); return item; },
+  deleteFoodLog: (id) => { save("foodlogs", load("foodlogs", []).filter((i) => i.id !== id)); },
+  getWorkouts: (data) => load("workouts", []).filter((w) => w.data === data),
+  createWorkout: ({ nome, dia_semana, data, exercicios }) => {
+    const workouts = load("workouts", []);
+    const workout = { id: Date.now(), nome, dia_semana, data };
+    workouts.push(workout);
+    save("workouts", workouts);
+    const todos = load("exercicios", []);
+    exercicios.forEach((ex, i) => { todos.push({ id: Date.now() + i + 1, workout_id: workout.id, feito: 0, ...ex }); });
+    save("exercicios", todos);
+    return workout;
+  },
+  getExercicios: (workoutId) => load("exercicios", []).filter((e) => e.workout_id === workoutId),
+  patchExercicio: (id, payload) => { save("exercicios", load("exercicios", []).map((e) => (e.id === id ? { ...e, ...payload } : e))); },
+  getWeightLogs: () => load("weightlogs", []).sort((a, b) => a.data.localeCompare(b.data)),
+  addWeightLog: (payload) => { const all = load("weightlogs", []); all.push(payload); save("weightlogs", all); },
+  getWaterTotal: (data) => load("waterlogs", {})[data] ?? 0,
+  addWater: (data, delta) => { const map = load("waterlogs", {}); map[data] = Math.max((map[data] ?? 0) + delta, 0); save("waterlogs", map); return map[data]; },
+  limparTudo: () => { Object.keys(localStorage).filter((k) => k.startsWith(PREFIX)).forEach((k) => localStorage.removeItem(k)); },
+  getSyncCode: () => load("synccode", null),
+  saveSyncCode: (c) => { save("synccode", c); return c; },
+  coletarTudo: () => {
+    const dados = {};
+    Object.keys(localStorage).filter((k) => k.startsWith(PREFIX) && k !== PREFIX + "synccode")
+      .forEach((k) => { dados[k.replace(PREFIX, "")] = JSON.parse(localStorage.getItem(k)); });
+    return dados;
+  },
+  aplicarTudo: (dados) => { Object.entries(dados).forEach(([k, v]) => save(k, v)); },
+};
+
+function gerarCodigo() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let c = "";
+  for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  return c;
+}
+
+const HOJE = new Date().toISOString().slice(0, 10);
+function formatBR(iso) { const [, m, d] = iso.split("-"); return `${d}/${m}`; }
+
+const FAVORITOS = [
+  { nome: "Whey protein (30g)", kcal: 120 },
+  { nome: "Creatina (5g)", kcal: 0 },
+  { nome: "Arroz + feijão + frango", kcal: 620 },
+  { nome: "Pão francês + ovo", kcal: 280 },
+  { nome: "Banana + pasta de amendoim", kcal: 240 },
+  { nome: "Iogurte + granola", kcal: 210 },
+];
+const REFEICOES_LABEL = { cafe: "Café da manhã", almoco: "Almoço", lanche: "Lanche da tarde", jantar: "Jantar" };
+const TREINO_DEMO_EXERCICIOS = [
+  { nome: "Supino reto", series: 4, reps: 10, carga_kg: 60 },
+  { nome: "Supino inclinado halteres", series: 3, reps: 12, carga_kg: 24 },
+  { nome: "Crucifixo", series: 3, reps: 12, carga_kg: 14 },
+  { nome: "Tríceps corda", series: 4, reps: 12, carga_kg: 25 },
+  { nome: "Tríceps testa", series: 3, reps: 10, carga_kg: 20 },
+];
+const METAS_FALLBACK = {
+  emagrecer: { calorias: 1850, proteina: 150, carbo: 160, gordura: 55 },
+  manter: { calorias: 2300, proteina: 140, carbo: 260, gordura: 70 },
+  ganhar: { calorias: 2850, proteina: 180, carbo: 340, gordura: 85 },
+};
+
+function Icon({ children, size = 16, color, style }) {
+  return <span style={{ fontSize: size, lineHeight: 1, color, display: "inline-flex", ...style }}>{children}</span>;
+}
+
+function CalorieRing({ consumido, meta }) {
+  const pct = Math.min(consumido / meta, 1) || 0;
+  const r = 70;
+  const circ = 2 * Math.PI * r;
+  const restante = Math.max(meta - consumido, 0);
+  return (
+    <div className="ring-wrap">
+      <svg width="170" height="170" viewBox="0 0 170 170">
+        <circle cx="85" cy="85" r={r} className="ring-track" />
+        <circle cx="85" cy="85" r={r} className="ring-progress" strokeDasharray={circ} strokeDashoffset={circ - pct * circ} transform="rotate(-90 85 85)" />
+      </svg>
+      <div className="ring-center"><span className="ring-number">{restante}</span><span className="ring-label">kcal restantes</span></div>
+    </div>
+  );
+}
+
+function MacroBar({ label, atual, meta, color }) {
+  const pct = Math.min((atual / meta) * 100, 100) || 0;
+  return (
+    <div className="macro-row">
+      <div className="macro-top"><span className="macro-label">{label}</span><span className="macro-vals">{atual}g / {meta}g</span></div>
+      <div className="macro-track"><div className="macro-fill" style={{ width: `${pct}%`, background: color }} /></div>
+    </div>
+  );
+}
+
+function ModalSync({ syncCode, onFechar, onEntrarComCodigo, sincronizando, erro }) {
+  const [codigoInput, setCodigoInput] = useState("");
+  const [copiado, setCopiado] = useState(false);
+  function copiar() { navigator.clipboard?.writeText(syncCode); setCopiado(true); setTimeout(() => setCopiado(false), 1500); }
+  return (
+    <div className="modal-overlay" onClick={onFechar}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head"><span>Sincronizar entre aparelhos</span><button className="icon-btn" onClick={onFechar}><Icon size={16}>✖</Icon></button></div>
+        <p className="muted small">Sua chave neste aparelho:</p>
+        <div className="sync-code-box"><span className="sync-code">{syncCode}</span><button className="icon-btn" onClick={copiar}><Icon size={16}>📋</Icon></button></div>
+        {copiado && <span className="muted small">Copiado!</span>}
+        <p className="muted small">Use essa chave no outro aparelho pra puxar esses dados pra lá.</p>
+        <div style={{ height: 1, background: "#EEF2F0", margin: "8px 0" }} />
+        <p className="muted small">Já tem uma chave de outro aparelho? Digite abaixo — isso <strong>substitui</strong> os dados daqui.</p>
+        {erro && <div className="hint-banner error-banner"><span>{erro}</span></div>}
+        <input className="input" placeholder="Ex: AB12CD" value={codigoInput} onChange={(e) => setCodigoInput(e.target.value.toUpperCase())} />
+        <button className="btn-pill full" disabled={sincronizando || !codigoInput} onClick={() => onEntrarComCodigo(codigoInput)}>
+          {sincronizando ? "Sincronizando..." : "Entrar com essa chave"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TelaOnboarding({ onConcluir }) {
+  const [form, setForm] = useState({ nome: "", altura_cm: "", sexo: "masculino", data_nascimento: "", objetivo: "manter" });
+  const [erro, setErro] = useState(null);
+  function campo(key, value) { setForm((f) => ({ ...f, [key]: value })); }
+  function concluir() {
+    if (!form.nome.trim()) { setErro("Me diz seu nome pelo menos :)"); return; }
+    onConcluir({ nome: form.nome.trim(), altura_cm: form.altura_cm ? Number(form.altura_cm) : null, sexo: form.sexo, data_nascimento: form.data_nascimento || null, objetivo: form.objetivo, meta_automatica: 1 });
+  }
+  return (
+    <div className="screen auth-screen">
+      <h1 className="screen-title">Vamos começar</h1>
+      <p className="muted small" style={{ marginTop: -8 }}>Tudo fica salvo só neste navegador — sem servidor, sem conta.</p>
+      {erro && <div className="hint-banner"><span>{erro}</span></div>}
+      <input className="input" placeholder="Nome" value={form.nome} onChange={(e) => campo("nome", e.target.value)} />
+      <input className="input" placeholder="Altura (cm)" type="number" value={form.altura_cm} onChange={(e) => campo("altura_cm", e.target.value)} />
+      <select className="select-refeicao" value={form.sexo} onChange={(e) => campo("sexo", e.target.value)}>
+        <option value="masculino">Masculino</option><option value="feminino">Feminino</option><option value="outro">Outro</option>
+      </select>
+      <input className="input" type="date" value={form.data_nascimento} onChange={(e) => campo("data_nascimento", e.target.value)} />
+      <select className="select-refeicao" value={form.objetivo} onChange={(e) => campo("objetivo", e.target.value)}>
+        <option value="emagrecer">Quero emagrecer</option><option value="manter">Quero manter o peso</option><option value="ganhar">Quero ganhar massa</option>
+      </select>
+      <button className="btn-pill primary full" onClick={concluir}>Começar</button>
+    </div>
+  );
+}
+
+function TelaHoje({ nome, consumido, meta, macrosConsumidos, metaMacros, agua, ajustarAgua, passos, streak, temMetaPersonalizada }) {
+  const metaAgua = 3000, metaPassos = 8000, desafioAtual = 3, desafioMeta = 5;
+  return (
+    <div className="screen">
+      <div className="screen-header">
+        <div><p className="eyebrow">{new Date().toLocaleDateString("pt-BR", { weekday: "long" })}</p><h1 className="screen-title">Olá, {nome}</h1></div>
+        <div className="avatar">{nome?.[0]?.toUpperCase() ?? "?"}</div>
+      </div>
+      {!temMetaPersonalizada && <div className="hint-banner"><span>Sua meta ainda é uma estimativa. Registre seu peso na aba Progresso e recalculamos automaticamente.</span></div>}
+      <div className="streak-bar">
+        <div className="streak-left"><Icon size={16} color="#FF5A1F">⚡</Icon><span><strong>{streak} dias</strong> registrando seguido</span></div>
+        <div className="streak-dots">{Array.from({ length: 7 }).map((_, i) => <span key={i} className={`streak-dot ${i < streak ? "streak-dot-on" : ""}`} />)}</div>
+      </div>
+      <div className="card ring-card">
+        <CalorieRing consumido={consumido} meta={meta} />
+        <div className="ring-side">
+          <div className="ring-side-row"><Icon size={16} color="#FF5A1F">🔥</Icon><span>{consumido} kcal consumidas</span></div>
+          <div className="ring-side-row muted"><span>Meta: {meta} kcal</span></div>
+          <div className="macros-mini">
+            <MacroBar label="Proteína" atual={macrosConsumidos.proteina} meta={metaMacros.proteina} color="#1E8C4A" />
+            <MacroBar label="Carboidrato" atual={macrosConsumidos.carbo} meta={metaMacros.carbo} color="#2F86D6" />
+            <MacroBar label="Gordura" atual={macrosConsumidos.gordura} meta={metaMacros.gordura} color="#FF5A1F" />
+          </div>
+        </div>
+      </div>
+      <div className="grid-2">
+        <div className="card small-card">
+          <div className="small-card-top"><div className="stat-icon" style={{ background: "#2F86D6" }}><Icon size={16} color="#fff">💧</Icon></div><span className="small-card-title">Água</span></div>
+          <div className="scoreboard">{(agua / 1000).toFixed(2)}<span className="scoreboard-unit">L</span></div>
+          <div className="track-thin"><div className="track-thin-fill" style={{ width: `${Math.min((agua / metaAgua) * 100, 100)}%`, background: "#2F86D6" }} /></div>
+          <div className="water-actions"><button className="btn-pill" onClick={() => ajustarAgua(-250)}>-250ml</button><button className="btn-pill primary" onClick={() => ajustarAgua(250)}>+250ml</button></div>
+        </div>
+        <div className="card small-card">
+          <div className="small-card-top"><div className="stat-icon" style={{ background: "#1E8C4A" }}><Icon size={16} color="#fff">👣</Icon></div><span className="small-card-title">Passos</span></div>
+          <div className="scoreboard">{passos.toLocaleString("pt-BR")}</div>
+          <div className="track-thin"><div className="track-thin-fill" style={{ width: `${Math.min((passos / metaPassos) * 100, 100)}%`, background: "#1E8C4A" }} /></div>
+          <div className="small-card-foot muted">Meta: {metaPassos.toLocaleString("pt-BR")} · via HealthKit (demo)</div>
+        </div>
+      </div>
+      <div className="card challenge-card">
+        <div className="challenge-top"><span className="challenge-title">Desafio da semana</span><span className="challenge-count">{desafioAtual}/{desafioMeta}</span></div>
+        <p className="challenge-desc">Beba 3L de água por 5 dias seguidos</p>
+        <div className="track-thin"><div className="track-thin-fill" style={{ width: `${(desafioAtual / desafioMeta) * 100}%`, background: "#1E8C4A" }} /></div>
+      </div>
+    </div>
+  );
+}
+
+function TelaDiario({ refeicoes, adicionarItem, removerItem, totalPorRefeicao }) {
+  const [modalAberto, setModalAberto] = useState(null);
+  const [nomeInput, setNomeInput] = useState("");
+  const [kcalInput, setKcalInput] = useState("");
+  const [aviso, setAviso] = useState(null);
+  const [refFavorito, setRefFavorito] = useState("almoco");
+  function confirmarAdicao() { if (!nomeInput.trim() || !kcalInput) return; adicionarItem(modalAberto, nomeInput.trim(), Number(kcalInput)); setNomeInput(""); setKcalInput(""); setModalAberto(null); }
+  return (
+    <div className="screen">
+      <div className="screen-header"><h1 className="screen-title">Diário alimentar</h1></div>
+      <div className="quick-actions">
+        <button className="quick-btn" onClick={() => setAviso("Aponte a câmera pro prato — a IA reconhece o alimento e estima as calorias automaticamente.")}><Icon size={16}>📷</Icon> Foto</button>
+        <button className="quick-btn" onClick={() => setAviso("Diga o que comeu, tipo 'dois ovos com pão' — o app registra sozinho.")}><Icon size={16}>🎙️</Icon> Voz</button>
+        <button className="quick-btn" onClick={() => setAviso("Escaneie o código de barras da embalagem para puxar os dados nutricionais.")}><Icon size={16}>🔲</Icon> Código</button>
+      </div>
+      {aviso && <div className="hint-banner"><span>{aviso}</span><button className="icon-btn" onClick={() => setAviso(null)}><Icon size={14}>✖</Icon></button></div>}
+      <div className="card fav-card">
+        <div className="meal-head"><span className="meal-title"><Icon size={13} color="#FF5A1F" style={{ marginRight: 4, verticalAlign: -2 }}>⭐</Icon>Favoritos — 1 toque</span></div>
+        <select className="select-refeicao" value={refFavorito} onChange={(e) => setRefFavorito(e.target.value)}>
+          {Object.entries(REFEICOES_LABEL).map(([key, label]) => <option key={key} value={key}>Adicionar em: {label}</option>)}
+        </select>
+        <div className="fav-chips">
+          {FAVORITOS.map((fav, i) => <button key={i} className="fav-chip" onClick={() => adicionarItem(refFavorito, fav.nome, fav.kcal)}>{fav.nome} <span className="fav-chip-kcal">{fav.kcal} kcal</span></button>)}
+        </div>
+      </div>
+      {Object.entries(REFEICOES_LABEL).map(([key, label]) => (
+        <div className="card meal-card" key={key}>
+          <div className="meal-head"><span className="meal-title">{label}</span><span className="meal-kcal">{totalPorRefeicao(key)} kcal</span></div>
+          {(refeicoes[key] ?? []).length === 0 && <p className="empty-hint">Nenhum item ainda.</p>}
+          {(refeicoes[key] ?? []).map((item) => (
+            <div className="meal-item" key={item.id}>
+              <span>{item.nome}</span>
+              <div className="meal-item-right"><span className="muted">{item.kcal} kcal</span><button className="icon-btn" onClick={() => removerItem(item.id)}><Icon size={14}>🗑️</Icon></button></div>
+            </div>
+          ))}
+          <button className="add-food-btn" onClick={() => setModalAberto(key)}><Icon size={14}>➕</Icon> Adicionar alimento</button>
+        </div>
+      ))}
+      {modalAberto && (
+        <div className="modal-overlay" onClick={() => setModalAberto(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head"><span>Novo alimento — {REFEICOES_LABEL[modalAberto]}</span><button className="icon-btn" onClick={() => setModalAberto(null)}><Icon size={16}>✖</Icon></button></div>
+            <input className="input" placeholder="Ex: Peito de frango 150g" value={nomeInput} onChange={(e) => setNomeInput(e.target.value)} />
+            <input className="input" placeholder="Calorias (kcal)" type="number" value={kcalInput} onChange={(e) => setKcalInput(e.target.value)} />
+            <button className="btn-pill primary full" onClick={confirmarAdicao}>Adicionar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TelaTreino({ treino, exercicios, toggleExercicio, criarTreinoDemo }) {
+  const feitos = exercicios.filter((e) => e.feito).length;
+  return (
+    <div className="screen">
+      <div className="screen-header"><h1 className="screen-title">Treino de hoje</h1></div>
+      {!treino && (
+        <div className="card">
+          <p className="muted small" style={{ marginBottom: 10 }}>Você ainda não tem um treino cadastrado para hoje.</p>
+          <button className="btn-pill primary full" onClick={criarTreinoDemo}>Criar treino de exemplo (Peito/Tríceps)</button>
+        </div>
+      )}
+      {treino && (
+        <div className="card">
+          <div className="meal-head"><span className="meal-title">{treino.nome}</span><span className="meal-kcal">{feitos}/{exercicios.length} feitos</span></div>
+          {exercicios.map((ex) => (
+            <div className={`exercise-row ${ex.feito ? "exercise-done" : ""}`} key={ex.id} onClick={() => toggleExercicio(ex.id, !ex.feito)}>
+              <div className={`checkbox ${ex.feito ? "checkbox-checked" : ""}`}>{ex.feito ? <Icon size={13} color="#fff">✔</Icon> : null}</div>
+              <div className="exercise-info"><span className="exercise-name">{ex.nome}</span><span className="exercise-detail">{ex.series}x{ex.reps} · {ex.carga_kg}kg</span></div>
+              <Icon size={16} color="#B9C2C0">▸</Icon>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TelaProgresso({ historico, adicionarPeso, altura }) {
+  const [novoPeso, setNovoPeso] = useState("");
+  const temHistorico = historico.length > 0;
+  const ultimo = historico[historico.length - 1]?.peso ?? 0;
+  const primeiro = historico[0]?.peso ?? 0;
+  const variacao = (ultimo - primeiro).toFixed(1);
+  const imc = altura ? (ultimo / Math.pow(altura / 100, 2)).toFixed(1) : "—";
+  const max = Math.max(...historico.map((h) => h.peso), 1);
+  const min = Math.min(...historico.map((h) => h.peso), 0);
+  const span = max - min || 1;
+  function confirmar() { if (!novoPeso) return; adicionarPeso(Number(novoPeso)); setNovoPeso(""); }
+  return (
+    <div className="screen">
+      <div className="screen-header"><h1 className="screen-title">Progresso</h1></div>
+      {temHistorico && (
+        <div className="grid-3">
+          <div className="stat-chip"><div className="stat-icon" style={{ background: "#FF5A1F" }}><Icon size={16} color="#fff">📈</Icon></div><div className="stat-value">{ultimo.toFixed(1)}<span className="stat-unit">kg</span></div><div className="stat-label">Peso atual</div></div>
+          <div className="stat-chip"><div className="stat-icon" style={{ background: "#1E8C4A" }}><Icon size={16} color="#fff">📈</Icon></div><div className="stat-value">{variacao > 0 ? `+${variacao}` : variacao}<span className="stat-unit">kg</span></div><div className="stat-label">Variação total</div></div>
+          <div className="stat-chip"><div className="stat-icon" style={{ background: "#2F86D6" }}><Icon size={16} color="#fff">📈</Icon></div><div className="stat-value">{imc}</div><div className="stat-label">IMC</div></div>
+        </div>
+      )}
+      {temHistorico ? (
+        <div className="card chart-card">
+          <span className="meal-title">Evolução do peso</span>
+          <div className="chart-area">
+            <svg width="100%" height="140" viewBox="0 0 300 140" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#FF5A1F" strokeWidth="3" points={historico.map((h, i) => { const x = historico.length > 1 ? (i / (historico.length - 1)) * 280 + 10 : 150; const y = 120 - ((h.peso - min) / span) * 100; return `${x},${y}`; }).join(" ")} />
+              {historico.map((h, i) => { const x = historico.length > 1 ? (i / (historico.length - 1)) * 280 + 10 : 150; const y = 120 - ((h.peso - min) / span) * 100; return <circle key={i} cx={x} cy={y} r="3.5" fill="#0E1E2B" />; })}
+            </svg>
+            <div className="chart-labels">{historico.map((h, i) => <span key={i}>{h.data}</span>)}</div>
+          </div>
+        </div>
+      ) : <div className="card"><p className="muted small">Nenhum peso registrado ainda. Adicione o primeiro abaixo.</p></div>}
+      <div className="card">
+        <span className="meal-title">Registrar novo peso</span>
+        <div className="weight-input-row">
+          <input className="input" type="number" step="0.1" placeholder="Ex: 80.5" value={novoPeso} onChange={(e) => setNovoPeso(e.target.value)} />
+          <button className="btn-pill primary" onClick={confirmar}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TelaPerfil({ perfil, setObjetivo, setMetaAutomatica, recalcular, onLimpar }) {
+  const opcoes = [
+    { key: "emagrecer", label: "Emagrecer", desc: "Déficit calórico controlado" },
+    { key: "manter", label: "Manter peso", desc: "Calorias na manutenção" },
+    { key: "ganhar", label: "Ganhar massa", desc: "Superávit + foco em proteína" },
+  ];
+  return (
+    <div className="screen">
+      <div className="screen-header"><h1 className="screen-title">Perfil</h1></div>
+      <div className="card profile-card">
+        <div className="avatar big">{perfil.nome?.[0]?.toUpperCase() ?? "?"}</div>
+        <div><div className="profile-name">{perfil.nome}</div><div className="muted">{perfil.altura_cm ? `${perfil.altura_cm} cm` : "Altura não informada"}</div></div>
+      </div>
+      <div className="card">
+        <span className="meal-title">Seu objetivo</span>
+        {opcoes.map((op) => (
+          <div key={op.key} className={`goal-row ${perfil.objetivo === op.key ? "goal-row-active" : ""}`} onClick={() => setObjetivo(op.key)}>
+            <div><div className="goal-label">{op.label}</div><div className="muted small">{op.desc}</div></div>
+            <div className={`radio ${perfil.objetivo === op.key ? "radio-checked" : ""}`} />
+          </div>
+        ))}
+      </div>
+      <div className="card adaptive-card">
+        <div className="adaptive-row">
+          <div><div className="goal-label">Ajustar meta automaticamente</div><div className="muted small">Recalcula suas calorias com base no seu peso mais recente</div></div>
+          <button className={`switch ${perfil.meta_automatica ? "switch-on" : ""}`} onClick={() => setMetaAutomatica(!perfil.meta_automatica)}><span className="switch-knob" /></button>
+        </div>
+        <button className="btn-pill full" style={{ marginTop: 10 }} onClick={recalcular}>Recalcular minha meta agora</button>
+      </div>
+      <div className="card premium-card">
+        <div className="premium-title">Plano Premium</div>
+        <p className="premium-desc">Scanner de código de barras, treinos por IA e relatórios avançados.</p>
+        <button className="btn-pill dark full">Assinar — R$ 19,90/mês</button>
+      </div>
+      <button className="btn-pill full" onClick={onLimpar}><Icon size={14} style={{ verticalAlign: -2, marginRight: 6 }}>🗑️</Icon>Apagar meus dados deste navegador</button>
+    </div>
+  );
+}
+
+function FitApp() {
+  const [tab, setTab] = useState("hoje");
+  const [perfil, setPerfil] = useState(null);
+  const [pronto, setPronto] = useState(false);
+  const [goals, setGoals] = useState(null);
+  const [foodLogs, setFoodLogs] = useState([]);
+  const [treino, setTreino] = useState(null);
+  const [exercicios, setExercicios] = useState([]);
+  const [historicoPeso, setHistoricoPeso] = useState([]);
+  const [aguaTotal, setAguaTotal] = useState(0);
+  const [syncCode, setSyncCode] = useState(null);
+  const [modalSyncAberto, setModalSyncAberto] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [erroSync, setErroSync] = useState(null);
+
+  const passos = 5230;
+  const streak = 4;
+
+  const carregarDoLocalStorage = useCallback(() => {
+    const p = db.getPerfil();
+    setSyncCode(db.getSyncCode());
+    if (p) {
+      setPerfil(p);
+      setGoals(db.getGoals());
+      setFoodLogs(db.getFoodLogs(HOJE));
+      setHistoricoPeso(db.getWeightLogs().map((w) => ({ data: formatBR(w.data), peso: w.peso_kg })));
+      setAguaTotal(db.getWaterTotal(HOJE));
+      const workoutsHoje = db.getWorkouts(HOJE);
+      if (workoutsHoje.length > 0) { setTreino(workoutsHoje[0]); setExercicios(db.getExercicios(workoutsHoje[0].id)); }
+      else { setTreino(null); setExercicios([]); }
+    }
+  }, []);
+
+  useEffect(() => { carregarDoLocalStorage(); setPronto(true); }, [carregarDoLocalStorage]);
+
+  const enviarParaNuvem = useCallback(async (code) => {
+    if (!code) return;
+    try {
+      await fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, data: db.coletarTudo() }) });
+    } catch { /* offline ou API ainda não configurada — sem problema */ }
+  }, []);
+
+  async function puxarDaNuvem(code) {
+    setSincronizando(true); setErroSync(null);
+    try {
+      const res = await fetch(`/api/sync?code=${encodeURIComponent(code)}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.erro || "Não encontrei dados para essa chave");
+      db.aplicarTudo(json.data);
+      db.saveSyncCode(code);
+      carregarDoLocalStorage();
+      setModalSyncAberto(false);
+    } catch (e) { setErroSync(e.message); } finally { setSincronizando(false); }
+  }
+
+  async function sincronizarAgora() {
+    setSincronizando(true); setErroSync(null);
+    try { await enviarParaNuvem(syncCode); } finally { setSincronizando(false); }
+  }
+
+  const syncTimer = useRef(null);
+  const syncCodeRef = useRef(null);
+  syncCodeRef.current = syncCode;
+  function agendarEnvio() {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => enviarParaNuvem(syncCodeRef.current), 1500);
+  }
+
+  function finalizarOnboarding(dadosPerfil) {
+    const salvo = db.savePerfil(dadosPerfil);
+    setPerfil(salvo);
+    const codigo = db.saveSyncCode(gerarCodigo());
+    setSyncCode(codigo);
+    enviarParaNuvem(codigo);
+  }
+
+  function limparDados() {
+    if (!window.confirm("Isso apaga todos os dados salvos neste navegador. Tem certeza?")) return;
+    db.limparTudo();
+    setPerfil(null); setGoals(null); setFoodLogs([]); setTreino(null);
+    setExercicios([]); setHistoricoPeso([]); setAguaTotal(0); setSyncCode(null);
+  }
+
+  const refeicoesPorChave = useMemo(() => {
+    const agrupado = { cafe: [], almoco: [], lanche: [], jantar: [] };
+    foodLogs.forEach((item) => { (agrupado[item.refeicao] ??= []).push(item); });
+    return agrupado;
+  }, [foodLogs]);
+
+  function totalPorRefeicao(key) { return (refeicoesPorChave[key] ?? []).reduce((a, i) => a + i.kcal, 0); }
+  const totalConsumido = useMemo(() => foodLogs.reduce((a, i) => a + i.kcal, 0), [foodLogs]);
+  const macrosConsumidos = useMemo(() => ({
+    proteina: Math.round(foodLogs.reduce((a, i) => a + (i.proteina_g || 0), 0)),
+    carbo: Math.round(foodLogs.reduce((a, i) => a + (i.carbo_g || 0), 0)),
+    gordura: Math.round(foodLogs.reduce((a, i) => a + (i.gordura_g || 0), 0)),
+  }), [foodLogs]);
+
+  const metaMacros = goals ? { proteina: goals.meta_proteina, carbo: goals.meta_carbo, gordura: goals.meta_gordura } : METAS_FALLBACK[perfil?.objetivo ?? "manter"];
+  const metaCalorica = goals?.meta_calorica ?? METAS_FALLBACK[perfil?.objetivo ?? "manter"].calorias;
+
+  function adicionarItem(key, nome, kcal) { db.addFoodLog({ nome, kcal, refeicao: key, data: HOJE }); setFoodLogs(db.getFoodLogs(HOJE)); agendarEnvio(); }
+  function removerItem(id) { db.deleteFoodLog(id); setFoodLogs(db.getFoodLogs(HOJE)); agendarEnvio(); }
+  function toggleExercicio(id, feito) { db.patchExercicio(id, { feito: feito ? 1 : 0 }); setExercicios((prev) => prev.map((e) => (e.id === id ? { ...e, feito: feito ? 1 : 0 } : e))); agendarEnvio(); }
+  function criarTreinoDemo() { const w = db.createWorkout({ nome: "Peito/Tríceps", dia_semana: "HOJE", data: HOJE, exercicios: TREINO_DEMO_EXERCICIOS }); setTreino(w); setExercicios(db.getExercicios(w.id)); agendarEnvio(); }
+
+  function recalcularComPeso(pesoKg) {
+    if (!perfil?.altura_cm || !perfil?.data_nascimento) return;
+    const idade = new Date().getFullYear() - new Date(perfil.data_nascimento).getFullYear();
+    const metas = calcularMetas({ pesoKg, alturaCm: perfil.altura_cm, idade, sexo: perfil.sexo, objetivo: perfil.objetivo });
+    setGoals(db.saveGoals(metas));
+  }
+  function adicionarPeso(peso) { db.addWeightLog({ peso_kg: peso, data: HOJE }); setHistoricoPeso(db.getWeightLogs().map((w) => ({ data: formatBR(w.data), peso: w.peso_kg }))); if (perfil?.meta_automatica) recalcularComPeso(peso); agendarEnvio(); }
+  function ajustarAgua(delta) { setAguaTotal(db.addWater(HOJE, delta)); agendarEnvio(); }
+  function setObjetivo(objetivo) { const novoPerfil = db.savePerfil({ ...perfil, objetivo }); setPerfil(novoPerfil); const ultimo = db.getWeightLogs().slice(-1)[0]; if (perfil?.meta_automatica && ultimo) recalcularComPeso(ultimo.peso_kg); agendarEnvio(); }
+  function setMetaAutomatica(valor) { setPerfil(db.savePerfil({ ...perfil, meta_automatica: valor ? 1 : 0 })); agendarEnvio(); }
+  function recalcular() { const ultimo = db.getWeightLogs().slice(-1)[0]; if (!ultimo) { window.alert("Registre um peso na aba Progresso primeiro."); return; } recalcularComPeso(ultimo.peso_kg); }
+
+  const TABS = [
+    { key: "hoje", label: "Hoje", emoji: "🏠" },
+    { key: "diario", label: "Diário", emoji: "🍽️" },
+    { key: "treino", label: "Treino", emoji: "🏋️" },
+    { key: "progresso", label: "Progresso", emoji: "📈" },
+    { key: "perfil", label: "Perfil", emoji: "👤" },
+  ];
+
+  return (
+    <div className="app-outer">
+      <div className="phone">
+        <div className="notch" />
+        <div className="status-bar">
+          <span>9:41</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {pronto && perfil && (
+              <>
+                <button className="sync-icon-btn" onClick={() => setModalSyncAberto(true)} title="Chave de sincronização"><Icon size={15}>🔑</Icon></button>
+                <button className="sync-icon-btn" onClick={sincronizarAgora} title="Sincronizar agora">
+                  <span className={sincronizando ? "spin" : ""} style={{ display: "inline-flex", fontSize: 15 }}>🔄</span>
+                </button>
+              </>
+            )}
+            <span>●●●●</span>
+          </div>
+        </div>
+        <div className="content">
+          {!pronto && <div className="screen"><p className="muted small">Carregando...</p></div>}
+          {pronto && !perfil && <TelaOnboarding onConcluir={finalizarOnboarding} />}
+          {pronto && perfil && (
+            <>
+              {tab === "hoje" && <TelaHoje nome={perfil.nome} consumido={totalConsumido} meta={metaCalorica} macrosConsumidos={macrosConsumidos} metaMacros={metaMacros} agua={aguaTotal} ajustarAgua={ajustarAgua} passos={passos} streak={streak} temMetaPersonalizada={!!goals} />}
+              {tab === "diario" && <TelaDiario refeicoes={refeicoesPorChave} adicionarItem={adicionarItem} removerItem={removerItem} totalPorRefeicao={totalPorRefeicao} />}
+              {tab === "treino" && <TelaTreino treino={treino} exercicios={exercicios} toggleExercicio={toggleExercicio} criarTreinoDemo={criarTreinoDemo} />}
+              {tab === "progresso" && <TelaProgresso historico={historicoPeso} adicionarPeso={adicionarPeso} altura={perfil.altura_cm} />}
+              {tab === "perfil" && <TelaPerfil perfil={perfil} setObjetivo={setObjetivo} setMetaAutomatica={setMetaAutomatica} recalcular={recalcular} onLimpar={limparDados} />}
+            </>
+          )}
+        </div>
+        {pronto && perfil && (
+          <div className="tab-bar">
+            {TABS.map((t) => (
+              <button key={t.key} className={`tab-item ${tab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}><Icon size={20}>{t.emoji}</Icon><span>{t.label}</span></button>
+            ))}
+          </div>
+        )}
+        {modalSyncAberto && <ModalSync syncCode={syncCode} onFechar={() => { setModalSyncAberto(false); setErroSync(null); }} onEntrarComCodigo={puxarDaNuvem} sincronizando={sincronizando} erro={erroSync} />}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<FitApp />);
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+  }
+  // Transpila manualmente com runtime "classic" (React.createElement) — o
+  // automático insere um `import`, que quebra fora de <script type="module">.
+  window.addEventListener("load", function () {
+    try {
+      var codigoFonte = document.getElementById("fit-app-source").textContent;
+      var transpilado = Babel.transform(codigoFonte, { presets: [["react", { runtime: "classic" }]] }).code;
+      var script = document.createElement("script");
+      script.text = transpilado;
+      document.body.appendChild(script);
+    } catch (e) {
+      document.getElementById("root").innerHTML =
+        '<div style="padding:24px;font-family:sans-serif;color:#8A1F1F;background:#FDECEC;border-radius:12px;max-width:390px;margin:24px auto;">' +
+        "<strong>Erro ao carregar o app:</strong><br>" + e.message + "</div>";
+    }
+  });
+</script>
+</body>
+</html>
